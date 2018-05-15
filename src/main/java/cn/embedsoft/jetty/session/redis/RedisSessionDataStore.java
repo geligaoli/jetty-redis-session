@@ -168,7 +168,7 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
                                 reference.set(data.getExpiry() <= 0 || data.getExpiry() > System.currentTimeMillis());
                                 
                             } catch (Exception e1) {
-                                _client.del(bdata);
+                                _client.del(keydata);
                                 exception.set(e1);
                             }
                         }
@@ -198,7 +198,8 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
             public void run () {
                 LOG.debug("Loading SessionID {} from Redis", id);
                 try (Jedis _client = redisPool.getResource()) {
-                    byte[] bdata = _client.get(getIdWithContext(id));
+                    byte[] keydata = getIdWithContext(id);
+                    byte[] bdata = _client.get(keydata);
                     
                     if (bdata != null && bdata.length > 0) {
                         try (ByteArrayInputStream bin = new ByteArrayInputStream(bdata);
@@ -214,7 +215,7 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
                             
                             reference.set(data);
                         } catch (Exception e1) {
-                            _client.del(bdata);
+                            _client.del(keydata);
                             exception.set(e1);
                         }
                     }
