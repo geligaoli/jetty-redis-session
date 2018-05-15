@@ -2,19 +2,15 @@ package cn.embedsoft.jetty.session.redis;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
@@ -27,9 +23,6 @@ import com.esotericsoftware.kryo.pool.KryoCallback;
 import com.esotericsoftware.kryo.pool.KryoPool;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisSentinelPool;
-import redis.clients.util.JedisURIHelper;
 import redis.clients.util.Pool;
 
 /**
@@ -40,13 +33,9 @@ import redis.clients.util.Pool;
  */
 @ManagedObject
 public class RedisSessionDataStore extends AbstractSessionDataStore{
-    private  final static Logger LOG = Log.getLogger(RedisSessionDataStore.class);
-    
-    public static final Charset UTF8 = Charset.forName("UTF-8");
-    public static final int DEFAULT_PORT = 6379;
-    public static final int DEFAULT_SENTINEL_PORT = 26379;
-    public static final int DEFAULT_TIMEOUT = 2000;
-    public static final int REDIS_CACHE_TIMEOUT = 3600;
+    private static final Logger LOG = Log.getLogger(RedisSessionDataStore.class);
+    private static final Charset UTF8 = Charset.forName("UTF-8");
+    private static final int REDIS_CACHE_TIMEOUT = 3600;
     
     protected RedisConfig config;
     protected Pool<Jedis> redisPool;
@@ -68,63 +57,14 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
     
     private void initializeRedisPool() {
         if (redisPool == null) {
-            URI uri = URI.create(config.getUri());
-            if (! JedisURIHelper.isValid(uri))
-                throw new IllegalStateException("jetty.session.embedsoft.redis.uri setting error");
-            
-            MultiMap<String> params = new MultiMap<String>();
-            UrlEncoded.decodeUtf8To(uri.getQuery(), params);
-            
-            int database = JedisURIHelper.getDBIndex(uri);
-            String clientName = params.getString("clientName");
-            String _timeout = params.getString("timeout");
-            int timeout = _timeout == null ? DEFAULT_TIMEOUT : Integer.parseInt(_timeout);
-            
-            GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
-            poolConfig.setMaxTotal(config.getMaxTotal());
-            poolConfig.setMaxIdle(config.getMaxIdle());
-            poolConfig.setMinIdle(config.getMinIdle());
-            poolConfig.setMaxWaitMillis(config.getMaxWaitMillis());
+            redisPool = JRedisPool.create(this.config);
             
             if (config.getSavePeriodSec() > 0)
                 this.setSavePeriodSec(config.getSavePeriodSec());
-            
-            // parse uri
-            if ("redis-sentinel".equals(uri.getScheme())) {
-                String sentinelMasterId = params.getString("sentinelMasterId");
-                if (sentinelMasterId == null) sentinelMasterId = "master";
-                
-                String authority = uri.getAuthority();
-                int pos = authority.indexOf('@');
-                
-                String password = pos <= 1 ? null : authority.substring(0, pos).split(":", 2)[1];
-                String[] hosts = authority.substring(pos + 1).split(",");
-
-                Set<String> sentinels = new HashSet<>(); 
-                for(String host : hosts) {
-                    if (host.isEmpty())
-                        host = "127.0.0.1";
-                    else if (host.charAt(0) == '[') {    // ipv6
-                        sentinels.add(host.indexOf("]:") != -1 ? host : (host+":"+DEFAULT_SENTINEL_PORT));
-                    } else
-                        sentinels.add(host.indexOf(":") != -1 ? host : (host+":"+DEFAULT_SENTINEL_PORT));
-                }
-                
-                redisPool = new JedisSentinelPool(sentinelMasterId, sentinels, poolConfig, timeout, password, database, clientName);
-                
-            } else {
-                boolean ssl = "rediss".equals(uri.getScheme());
-                String password = JedisURIHelper.getPassword(uri);
-                String host = uri.getHost();
-                int port = uri.getPort() < 0 ? DEFAULT_PORT : uri.getPort();
-                
-                redisPool = new JedisPool(poolConfig, host, port, timeout, password, database, clientName, ssl, null, null, null);
-            }
         }
     }
     
     private byte[] getIdWithContext(String id) {
-        // LOG.debug("redis key sessionid : {}_{}", _contextString, id);
         return (_contextString+"_"+id).getBytes(UTF8);
     }
 
