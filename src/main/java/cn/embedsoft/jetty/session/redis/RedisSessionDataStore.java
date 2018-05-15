@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,23 +18,17 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisSentinelPool;
-import redis.clients.util.JedisURIHelper;
 import redis.clients.util.Pool;
 
 /**
@@ -129,7 +122,7 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
             @Override
             public void run () {
                 LOG.debug("Loading SessionID {} from Redis", id);
-                try (Jedis _client = _pool.getResource()) {
+                try (Jedis _client = redisPool.getResource()) {
                     byte[] bdata = _client.get(getIdWithContext(id));
                     
                     if (bdata != null && bdata.length > 0) {
@@ -155,7 +148,7 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
     @Override
     public boolean delete(String id) throws Exception {
         LOG.debug("Deleting SessionID {} from Redis", id);
-        try (Jedis _client = _pool.getResource()) {
+        try (Jedis _client = redisPool.getResource()) {
             _client.del(getIdWithContext(id));
         }
         return true;
@@ -169,7 +162,7 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
               LOG.debug("Store session: {} to Redis", session.toString());
           
           this.save(bot, id, session);
-          try (Jedis _client = _pool.getResource()) {
+          try (Jedis _client = redisPool.getResource()) {
               int cachetimeout = Math.max(REDIS_CACHE_TIMEOUT,
                       (int)(session.getMaxInactiveMs() / 900) + this.getSavePeriodSec() * 2);
               _client.setex(getIdWithContext(id), cachetimeout, bot.toByteArray());
@@ -226,15 +219,15 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
         if (config == null || config.getUri() == null)
             throw new IllegalStateException("No redis config");
 
-        this.initialize();
+        this.initializeRedisPool();
         super.doStart();
     }
 
     @Override
     protected void doStop() throws Exception {
-        if (_pool != null) {
-            _pool.close();
-            _pool = null;
+        if (redisPool != null) {
+            redisPool.close();
+            redisPool = null;
         }
         super.doStop();
     }
