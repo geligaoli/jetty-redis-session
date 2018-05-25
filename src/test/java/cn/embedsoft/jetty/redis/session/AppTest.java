@@ -12,7 +12,7 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 
-import cn.embedsoft.jetty.session.redis.RedisConfig;
+import cn.embedsoft.jetty.session.j2cache.J2CacheConfig;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;

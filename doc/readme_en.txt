@@ -1,6 +1,6 @@
 Functions:
 
-    Store jetty session to redis and read from it.    
+    Store jetty session to j2cache and read from it.    
 
 Usage:
 
@@ -9,7 +9,7 @@ Usage:
     ${jetty.home}/etc/sessions/session-store-embedsoft-redis.xml
     ${jetty.home}/modules/session-store-embedsoft-redis.mod
     
-    Copy jedis-2.9.0.jar commons-pool2-2.5.0.jar jetty-redis-sessions-0.1.0.jar to ${jetty.home}/lib/ext/ directory
+    Copy jedis-2.9.0.jar commons-pool2-2.5.0.jar jetty-j2cache-sessions-0.1.0.jar to ${jetty.home}/lib/ext/ directory
     
     Set the jetty.base variable and execute "java -jar /usr/local/jetty/start.jar --add-to-start=session-store-embedsoft-redis".
     

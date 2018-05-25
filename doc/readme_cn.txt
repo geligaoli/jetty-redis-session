@@ -1,9 +1,7 @@
 
 功能：
 
-    将jetty的session，存放redis。以便于支持分布式。
-    第一版，采用的是 xmemcached.xml 中的方式，结果做到最后，发现这个真的只是个session的缓存啊，实际存储还是用FileStore之类的。:(
-    第二版，采用kyro方式，生成byte[]小，速度快，可惜对类有一定要求，后来取消该功能，采用普通的java序列化。
+    将jetty的session，存放j2cache。以便于支持分布式。
     
 
 使用：
@@ -13,7 +11,7 @@
     ${jetty.home}/etc/sessions/session-store-embedsoft-redis.xml
     ${jetty.home}/modules/session-store-embedsoft-redis.mod
     
-    将 jedis-2.9.0.jar commons-pool2-2.5.0.jar jetty-redis-sessions-0.1.0.jar 拷贝到 ${jetty.home}/lib/ext/ 目录下
+    将 jedis-2.9.0.jar commons-pool2-2.5.0.jar jetty-j2cache-sessions-0.1.0.jar 拷贝到 ${jetty.home}/lib/ext/ 目录下
     
     设置 jetty.base 变量，然后执行  java -jar /usr/local/jetty/start.jar --add-to-start=session-store-embedsoft-redis
     

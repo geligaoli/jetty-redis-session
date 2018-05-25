@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <New id="embedsoftJ2CacheConfig" class="cn.embedsoft.jetty.session.j2cache.J2CacheConfig">
+     <Set name="configfile"><Property name="jetty.session.embedsoft.j2cache.configfile" default="j2cache.properties" /></Set>
+     <Set name="savePeriodSec"><Property name="jetty.session.embedsoft.j2cache.savePeriodSec" default="0" /></Set>
+  </New>
+
+  <Call name="addBean">
+   <Arg>
+    <New id="sessionDataStoreFactory" class="cn.embedsoft.jetty.session.j2cache.J2CacheSessionDataStoreFactory">
+       <Set name="config"><Ref id="embedsoftJ2CacheConfig"/></Set>
+    </New>
+   </Arg>
+  </Call>
+
+</Configure>

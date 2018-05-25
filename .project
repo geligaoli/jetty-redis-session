@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>jetty-redis-sessions</name>
+	<name>jetty-j2cache-sessions</name>
 	<comment></comment>
 	<projects>
 	</projects>
