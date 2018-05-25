@@ -2,18 +2,8 @@ package cn.embedsoft.jetty.session.redis;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,12 +11,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.UnreadableSessionDataException;
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import org.nustaq.serialization.FSTConfiguration;
+import org.nustaq.serialization.FSTObjectInput;
+import org.nustaq.serialization.FSTObjectOutput;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
@@ -42,6 +34,7 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
     private static final Logger LOG = Log.getLogger(RedisSessionDataStore.class);
     private static final Charset UTF8 = Charset.forName("UTF-8");
     private static final int REDIS_CACHE_TIMEOUT = 3600;
+    static FSTConfiguration conf = FSTConfiguration.createUnsafeBinaryConfiguration();
     
     protected RedisConfig config;
     protected Pool<Jedis> redisPool;
@@ -93,7 +86,9 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
                         byte[] bdata = _client.get(keydata);
                         if (bdata != null && bdata.length > 0) {
                             try (ByteArrayInputStream bin = new ByteArrayInputStream(bdata)) {
-                                SessionData data = load(bin, id);
+                                conf.setClassLoader(_context.getContext().getClassLoader());
+                                FSTObjectInput fin = conf.getObjectInput(bin);
+                                SessionData data = (SessionData) fin.readObject();
                                 reference.set(data.getExpiry() <= 0 || data.getExpiry() > System.currentTimeMillis());
                             }
                         }
@@ -127,7 +122,10 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
                     
                     if (bdata != null && bdata.length > 0) {
                         try (ByteArrayInputStream bin = new ByteArrayInputStream(bdata)) {
-                            reference.set(load(bin, id));
+                            conf.setClassLoader(_context.getContext().getClassLoader());
+                            FSTObjectInput fin = conf.getObjectInput(bin);
+                            SessionData data = (SessionData) fin.readObject();
+                            reference.set(data);
                         }
                     }
                 } catch (Exception e) {
@@ -161,7 +159,10 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
           if(LOG.isDebugEnabled())
               LOG.debug("Store session: {} to Redis", session.toString());
           
-          this.save(bot, id, session);
+          FSTObjectOutput fout = conf.getObjectOutput(bot);
+          fout.writeObject(session);
+          fout.flush();
+          
           try (Jedis _client = redisPool.getResource()) {
               int cachetimeout = Math.max(REDIS_CACHE_TIMEOUT,
                       (int)(session.getMaxInactiveMs() / 900) + this.getSavePeriodSec() * 2);
@@ -230,109 +231,6 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
             redisPool = null;
         }
         super.doStop();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param os the output stream to save to
-     * @param id identity of the session
-     * @param data the info of the session
-     * @throws IOException
-     */
-    private void save(OutputStream os, String id, SessionData data)  throws IOException
-    {
-        DataOutputStream out = new DataOutputStream(os);
-        out.writeUTF(id);
-        out.writeUTF(_context.getCanonicalContextPath());
-        out.writeUTF(_context.getVhost());
-        out.writeUTF(data.getLastNode());
-        out.writeLong(data.getCreated());
-        out.writeLong(data.getAccessed());
-        out.writeLong(data.getLastAccessed());
-        out.writeLong(data.getCookieSet());
-        out.writeLong(data.getExpiry());
-        out.writeLong(data.getMaxInactiveMs());
-        out.writeLong(data.getLastSaved());
-        
-        List<String> keys = new ArrayList<String>(data.getKeys());
-        out.writeInt(keys.size());
-        ObjectOutputStream oos = new ObjectOutputStream(out);
-        for (String name:keys)
-        {
-            oos.writeUTF(name);
-            oos.writeObject(data.getAttribute(name));
-        }
-    }
-    
-    /**
-     * @param is inputstream containing session data
-     * @param expectedId the id we've been told to load
-     * @return the session data
-     * @throws Exception
-     */
-    private SessionData load (InputStream is, String expectedId) throws Exception
-    {
-        String id = null; //the actual id from inside the file
-
-        try
-        {
-            SessionData data = null;
-            DataInputStream di = new DataInputStream(is);
-
-            id = di.readUTF();
-            String contextPath = di.readUTF();
-            String vhost = di.readUTF();
-            String lastNode = di.readUTF();
-            long created = di.readLong();
-            long accessed = di.readLong();
-            long lastAccessed = di.readLong();
-            long cookieSet = di.readLong();
-            long expiry = di.readLong();
-            long maxIdle = di.readLong();
-            long lastSaved = di.readLong();
-
-            data = newSessionData(id, created, accessed, lastAccessed, maxIdle); 
-            data.setContextPath(contextPath);
-            data.setVhost(vhost);
-            data.setLastNode(lastNode);
-            data.setCookieSet(cookieSet);
-            data.setExpiry(expiry);
-            data.setMaxInactiveMs(maxIdle);
-            data.setLastSaved(lastSaved);
-
-            // Attributes
-            restoreAttributes(di, di.readInt(), data);
-
-            return data;        
-        }
-        catch (Exception e)
-        {
-            throw new UnreadableSessionDataException(expectedId, _context, e);
-        }
-    }
-
-    /**
-     * @param is inputstream containing session data
-     * @param size number of attributes
-     * @param data the data to restore to
-     * @throws Exception
-     */
-    private void restoreAttributes (InputStream is, int size, SessionData data) throws Exception
-    {
-        if (size>0)
-        {
-            // input stream should not be closed here
-            Map<String,Object> attributes = new HashMap<String,Object>();
-            @SuppressWarnings("resource")
-            ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
-            for (int i=0; i<size;i++)
-            {
-                String key = ois.readUTF();
-                Object value = ois.readObject();
-                attributes.put(key,value);
-            }
-            data.putAllAttributes(attributes);
-        }
     }
 
 }
