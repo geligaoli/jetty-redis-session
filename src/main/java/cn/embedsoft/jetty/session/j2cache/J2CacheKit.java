@@ -43,7 +43,7 @@ public class J2CacheKit {
 
     @SuppressWarnings("unchecked")
     public static <T> T get(String key) {
-        CacheObject cacheObject = cache.get(cacheName, key, true);
+        CacheObject cacheObject = cache.get(cacheName, key);
         return cacheObject != null ? (T) cacheObject.getValue() : null;
     }
 
@@ -61,7 +61,7 @@ public class J2CacheKit {
 
     @SuppressWarnings("unchecked")
     public static <T> T get(String key, Function<String, Object> loader) {
-        CacheObject cacheObject = cache.get(cacheName, key, loader, true);
+        CacheObject cacheObject = cache.get(cacheName, key, loader);
         return cacheObject != null ? (T) cacheObject.getValue() : null;
     }
 
