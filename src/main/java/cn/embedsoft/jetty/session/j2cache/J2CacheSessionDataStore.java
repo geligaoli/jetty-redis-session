@@ -195,4 +195,10 @@ public class J2CacheSessionDataStore extends AbstractSessionDataStore {
         super.doStop();
     }
 
+    @Override
+    public SessionData doLoad(String id) throws Exception {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
 }
