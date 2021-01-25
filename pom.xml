@@ -2,16 +2,9 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>cn.embedsoft</groupId>
-		<artifactId>embedsoft-parent</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
-        <relativePath>../embedsoft-parent</relativePath>
-	</parent>
-
 	<groupId>com.embedsoft</groupId>
 	<artifactId>jetty-redis-sessions</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>0.2.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>jetty-redis-sessions</name>
@@ -19,7 +12,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<jetty.version>9.4.31.v20200723</jetty.version>
+		<jetty.version>9.4.36.v20210114</jetty.version>
 	</properties>
 
 	<dependencies>
@@ -35,14 +28,17 @@
 		</dependency>
 
 		<dependency>
-			<groupId>net.oschina.j2cache</groupId>
-			<artifactId>j2cache-core</artifactId>
+		    <groupId>net.oschina.j2cache</groupId>
+		    <artifactId>j2cache-core</artifactId>
+		    <version>2.8.2-release</version>
 		</dependency>
 
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
+		    <groupId>junit</groupId>
+		    <artifactId>junit</artifactId>
+		    <version>4.13.1</version>
+		    <scope>test</scope>
 		</dependency>
+
 	</dependencies>
 </project>
