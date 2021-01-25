@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
+import redis.clients.jedis.util.Pool;
 
 /**
  * redis store of session data.
@@ -342,5 +342,11 @@ public class RedisSessionDataStore extends AbstractSessionDataStore{
             data.putAllAttributes(attributes);
         }
     }
+
+	@Override
+	public SessionData doLoad(String id) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 }

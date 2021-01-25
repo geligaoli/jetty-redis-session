@@ -2,12 +2,6 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>cn.embedsoft</groupId>
-		<artifactId>embedsoft-parent</artifactId>
-		<version>0.1.1</version>
-	</parent>
-
 	<groupId>com.embedsoft</groupId>
 	<artifactId>jetty-redis-sessions</artifactId>
 	<version>0.1.0</version>
@@ -30,12 +24,12 @@
 		<dependency>
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
-			<version>2.9.0</version>
+			<version>3.5.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-pool2</artifactId>
-			<version>2.5.0</version>
+			<version>2.9.0</version>
 		</dependency>
 
 		<!-- <dependency> <groupId>com.esotericsoftware</groupId> <artifactId>kryo</artifactId> <version>4.0.2</version> </dependency> 
@@ -44,7 +38,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>3.8.2</version>
+			<version>4.13.1</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
